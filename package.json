@@ -6,5 +6,8 @@
   },
   "devDependencies": {
     "concurrently": "^9.0.0"
+  },
+  "dependencies": {
+    "mysql2": "^3.23.1"
   }
 }
