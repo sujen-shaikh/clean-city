@@ -6,7 +6,9 @@ import { readReports } from '../lib/reportData';
 
 const iconColors = {
   Pending: '#f59e0b',
+  Acknowledged: '#8b5cf6',
   'In Progress': '#3b82f6',
+  Delayed: '#ef4444',
   Resolved: '#10b981',
 };
 
@@ -29,7 +31,9 @@ export default function MapPage() {
 
   const totals = {
     Pending: reports.filter((report) => report.status === 'Pending').length,
+    Acknowledged: reports.filter((report) => report.status === 'Acknowledged').length,
     'In Progress': reports.filter((report) => report.status === 'In Progress').length,
+    Delayed: reports.filter((report) => report.status === 'Delayed').length,
     Resolved: reports.filter((report) => report.status === 'Resolved').length,
   };
 
@@ -39,7 +43,7 @@ export default function MapPage() {
         <h1 className="text-3xl font-semibold">Live map of civic reports</h1>
         <p className="mt-2 text-slate-600">Reports appear as markers with color-coded status.</p>
 
-        <div className="mt-6 grid gap-4 md:grid-cols-3">
+        <div className="mt-6 grid gap-4 md:grid-cols-5">
           {Object.entries(totals).map(([status, count]) => (
             <div key={status} className="rounded-2xl bg-slate-50 p-4">
               <p className="text-sm text-slate-500">{status}</p>

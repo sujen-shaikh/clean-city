@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
-import { readReports } from '../lib/reportData';
+import { readReports, reportStatuses, updateReportStatus } from '../lib/reportData';
 
 const ADMIN_PASSWORD = 'cleanadmin2026';
 const ADMIN_AUTH_KEY = 'cleancity-admin-auth';
 
 const statusStyles = {
   Pending: 'bg-amber-100 text-amber-800',
+  Acknowledged: 'bg-violet-100 text-violet-800',
   'In Progress': 'bg-blue-100 text-blue-800',
+  Delayed: 'bg-rose-100 text-rose-800',
   Resolved: 'bg-emerald-100 text-emerald-800',
 };
 
@@ -46,12 +48,14 @@ export default function Admin() {
     setIsAuthorized(saved);
   }, []);
 
-  const reports = useMemo(() => readReports(), []);
+  const [reports, setReports] = useState(() => readReports());
 
   const summary = {
     total: reports.length,
     pending: reports.filter((item) => item.status === 'Pending').length,
+    acknowledged: reports.filter((item) => item.status === 'Acknowledged').length,
     inProgress: reports.filter((item) => item.status === 'In Progress').length,
+    delayed: reports.filter((item) => item.status === 'Delayed').length,
     resolved: reports.filter((item) => item.status === 'Resolved').length,
   };
 
@@ -71,6 +75,11 @@ export default function Admin() {
     localStorage.removeItem(ADMIN_AUTH_KEY);
     setIsAuthorized(false);
     setPassword('');
+  };
+
+  const handleStatusChange = (id, status) => {
+    const updated = updateReportStatus(id, status);
+    setReports(updated);
   };
 
   if (!isAuthorized) {
@@ -135,7 +144,7 @@ export default function Admin() {
         </div>
       </div>
 
-      <div className="mb-8 grid gap-4 md:grid-cols-4">
+      <div className="mb-8 grid gap-4 md:grid-cols-5">
         <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-sm text-slate-500">Total</p>
           <p className="mt-2 text-3xl font-semibold text-slate-900">{summary.total}</p>
@@ -145,10 +154,18 @@ export default function Admin() {
           <p className="mt-2 text-3xl font-semibold text-amber-600">{summary.pending}</p>
         </div>
         <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-sm text-slate-500">Acknowledged</p>
+          <p className="mt-2 text-3xl font-semibold text-violet-600">{summary.acknowledged}</p>
+        </div>
+        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-sm text-slate-500">In progress</p>
           <p className="mt-2 text-3xl font-semibold text-blue-600">{summary.inProgress}</p>
         </div>
         <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-sm text-slate-500">Delayed</p>
+          <p className="mt-2 text-3xl font-semibold text-rose-600">{summary.delayed}</p>
+        </div>
+        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:col-span-2">
           <p className="text-sm text-slate-500">Resolved</p>
           <p className="mt-2 text-3xl font-semibold text-emerald-600">{summary.resolved}</p>
         </div>
@@ -161,20 +178,34 @@ export default function Admin() {
               <tr>
                 <th className="px-4 py-3 font-semibold">Title</th>
                 <th className="px-4 py-3 font-semibold">Category</th>
-                <th className="px-4 py-3 font-semibold">Status</th>
+                <th className="px-4 py-3 font-semibold">Action</th>
                 <th className="px-4 py-3 font-semibold">Location</th>
                 <th className="px-4 py-3 font-semibold">Date</th>
               </tr>
             </thead>
             <tbody>
               {reports.map((report) => (
-                <tr key={report.id} className="border-t border-slate-200">
+                <tr key={report.id} className="border-t border-slate-200 align-top">
                   <td className="px-4 py-3 font-medium text-slate-900">{report.title}</td>
                   <td className="px-4 py-3 text-slate-600">{report.category}</td>
                   <td className="px-4 py-3">
-                    <span className={`rounded-full px-3 py-1 text-xs font-medium ${statusStyles[report.status]}`}>
-                      {report.status}
-                    </span>
+                    <div className="space-y-2">
+                      <span className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${statusStyles[report.status]}`}>
+                        {report.status}
+                      </span>
+                      <select
+                        value={report.status}
+                        onChange={(event) => handleStatusChange(report.id, event.target.value)}
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:border-emerald-500"
+                        aria-label={`Update report ${report.title} status`}
+                      >
+                        {reportStatuses.map((status) => (
+                          <option key={status} value={status}>
+                            {status}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-slate-600">
                     {report.latitude}, {report.longitude}

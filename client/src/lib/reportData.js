@@ -1,5 +1,7 @@
 const REPORTS_KEY = 'cleancity-reports';
 
+export const reportStatuses = ['Pending', 'Acknowledged', 'In Progress', 'Delayed', 'Resolved'];
+
 export const defaultReports = [
   {
     id: 1,
@@ -70,10 +72,18 @@ export function addReport(report) {
   return writeReports(updated);
 }
 
-export function updateReportStatus(id, status) {
+export function updateReportStatus(id, status, adminNote = '') {
   const current = readReports();
+  const normalizedStatus = reportStatuses.includes(status) ? status : 'Pending';
+
   const updated = current.map((item) =>
-    item.id === Number(id) ? { ...item, status } : item
+    item.id === Number(id)
+      ? {
+          ...item,
+          status: normalizedStatus,
+          ...(adminNote ? { adminNote } : { adminNote: item.adminNote || '' }),
+        }
+      : item
   );
 
   return writeReports(updated);

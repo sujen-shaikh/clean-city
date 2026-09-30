@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react';
-import { readReports, updateReportStatus } from '../lib/reportData';
+import { readReports, reportStatuses, updateReportStatus } from '../lib/reportData';
 
-const statusOrder = ['All', 'Pending', 'In Progress', 'Resolved'];
+const statusOrder = ['All', 'Pending', 'Acknowledged', 'In Progress', 'Delayed', 'Resolved'];
 
 const statusStyles = {
   Pending: 'bg-amber-100 text-amber-800',
+  Acknowledged: 'bg-violet-100 text-violet-800',
   'In Progress': 'bg-blue-100 text-blue-800',
+  Delayed: 'bg-rose-100 text-rose-800',
   Resolved: 'bg-emerald-100 text-emerald-800',
 };
 
@@ -20,7 +22,9 @@ export default function Dashboard() {
 
   const totalReports = reports.length;
   const pending = reports.filter((report) => report.status === 'Pending').length;
+  const acknowledged = reports.filter((report) => report.status === 'Acknowledged').length;
   const inProgress = reports.filter((report) => report.status === 'In Progress').length;
+  const delayed = reports.filter((report) => report.status === 'Delayed').length;
   const resolved = reports.filter((report) => report.status === 'Resolved').length;
 
   const handleStatusChange = (id, nextStatus) => {
@@ -53,7 +57,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="mb-8 grid gap-4 md:grid-cols-4">
+      <div className="mb-8 grid gap-4 md:grid-cols-5">
         <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-sm text-slate-500">Total reports</p>
           <p className="mt-2 text-3xl font-semibold text-slate-900">{totalReports}</p>
@@ -63,10 +67,18 @@ export default function Dashboard() {
           <p className="mt-2 text-3xl font-semibold text-amber-600">{pending}</p>
         </div>
         <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-sm text-slate-500">Acknowledged</p>
+          <p className="mt-2 text-3xl font-semibold text-violet-600">{acknowledged}</p>
+        </div>
+        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-sm text-slate-500">In progress</p>
           <p className="mt-2 text-3xl font-semibold text-blue-600">{inProgress}</p>
         </div>
         <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-sm text-slate-500">Delayed</p>
+          <p className="mt-2 text-3xl font-semibold text-rose-600">{delayed}</p>
+        </div>
+        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:col-span-2">
           <p className="text-sm text-slate-500">Resolved</p>
           <p className="mt-2 text-3xl font-semibold text-emerald-600">{resolved}</p>
         </div>
@@ -87,21 +99,19 @@ export default function Dashboard() {
                 <p className="mt-3 max-w-3xl text-slate-600">{report.description}</p>
               </div>
 
-              <div className="flex flex-wrap gap-2">
-                {['Pending', 'In Progress', 'Resolved'].map((state) => (
-                  <button
-                    key={state}
-                    type="button"
-                    onClick={() => handleStatusChange(report.id, state)}
-                    className={`rounded-full px-3 py-2 text-sm font-medium transition ${
-                      report.status === state
-                        ? 'bg-slate-900 text-white'
-                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                    }`}
-                  >
-                    {state}
-                  </button>
-                ))}
+              <div className="flex flex-wrap items-center gap-2">
+                <select
+                  value={report.status}
+                  onChange={(event) => handleStatusChange(report.id, event.target.value)}
+                  className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 outline-none focus:border-emerald-500"
+                  aria-label={`Update status for ${report.title}`}
+                >
+                  {reportStatuses.map((state) => (
+                    <option key={state} value={state}>
+                      {state}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
           </div>
