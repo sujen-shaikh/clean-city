@@ -1,43 +1,111 @@
-const reports = [
-  { title: 'Garbage pile near school', status: 'Pending' },
-  { title: 'Drainage blockage on main road', status: 'In Progress' },
-  { title: 'Broken lamp post', status: 'Cleaned' },
-];
+import { useMemo, useState } from 'react';
+import { readReports, updateReportStatus } from '../lib/reportData';
+
+const statusOrder = ['All', 'Pending', 'In Progress', 'Resolved'];
+
+const statusStyles = {
+  Pending: 'bg-amber-100 text-amber-800',
+  'In Progress': 'bg-blue-100 text-blue-800',
+  Resolved: 'bg-emerald-100 text-emerald-800',
+};
 
 export default function Dashboard() {
+  const [reports, setReports] = useState(() => readReports());
+  const [filter, setFilter] = useState('All');
+
+  const filteredReports = useMemo(() => {
+    if (filter === 'All') return reports;
+    return reports.filter((report) => report.status === filter);
+  }, [filter, reports]);
+
+  const totalReports = reports.length;
+  const pending = reports.filter((report) => report.status === 'Pending').length;
+  const inProgress = reports.filter((report) => report.status === 'In Progress').length;
+  const resolved = reports.filter((report) => report.status === 'Resolved').length;
+
+  const handleStatusChange = (id, nextStatus) => {
+    const updated = updateReportStatus(id, nextStatus);
+    setReports(updated);
+  };
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-      <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-        <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-          <h1 className="text-3xl font-semibold">Your dashboard</h1>
-          <p className="mt-2 text-slate-600">Track the issues you submitted and their progress.</p>
+      <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-700">Operations center</p>
+          <h1 className="mt-2 text-3xl font-semibold">City response dashboard</h1>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {statusOrder.map((status) => (
+            <button
+              key={status}
+              type="button"
+              onClick={() => setFilter(status)}
+              className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                filter === status
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-white text-slate-700 ring-1 ring-slate-200 hover:text-emerald-700'
+              }`}
+            >
+              {status}
+            </button>
+          ))}
+        </div>
+      </div>
 
-          <div className="mt-6 space-y-3">
-            {reports.map((report) => (
-              <div key={report.title} className="flex items-center justify-between rounded-2xl border border-slate-200 p-4">
-                <div>
-                  <p className="font-semibold text-slate-800">{report.title}</p>
-                  <p className="text-sm text-slate-500">Submitted today</p>
+      <div className="mb-8 grid gap-4 md:grid-cols-4">
+        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-sm text-slate-500">Total reports</p>
+          <p className="mt-2 text-3xl font-semibold text-slate-900">{totalReports}</p>
+        </div>
+        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-sm text-slate-500">Pending</p>
+          <p className="mt-2 text-3xl font-semibold text-amber-600">{pending}</p>
+        </div>
+        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-sm text-slate-500">In progress</p>
+          <p className="mt-2 text-3xl font-semibold text-blue-600">{inProgress}</p>
+        </div>
+        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-sm text-slate-500">Resolved</p>
+          <p className="mt-2 text-3xl font-semibold text-emerald-600">{resolved}</p>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        {filteredReports.map((report) => (
+          <div key={report.id} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <div className="flex items-center gap-3">
+                  <p className="text-xl font-semibold text-slate-900">{report.title}</p>
+                  <span className={`rounded-full px-3 py-1 text-xs font-medium ${statusStyles[report.status]}`}>
+                    {report.status}
+                  </span>
                 </div>
-                <span className="rounded-full bg-emerald-100 px-3 py-1 text-sm font-medium text-emerald-700">{report.status}</span>
+                <p className="mt-2 text-sm text-slate-500">{report.category} • {new Date(report.createdAt).toLocaleDateString()}</p>
+                <p className="mt-3 max-w-3xl text-slate-600">{report.description}</p>
               </div>
-            ))}
-          </div>
-        </div>
 
-        <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-          <h2 className="text-2xl font-semibold">Rewards</h2>
-          <div className="mt-6 space-y-4">
-            <div className="rounded-2xl bg-slate-50 p-4">
-              <p className="text-sm text-slate-500">Reward points</p>
-              <p className="text-3xl font-semibold text-emerald-700">320</p>
-            </div>
-            <div className="rounded-2xl bg-slate-50 p-4">
-              <p className="text-sm text-slate-500">Badge</p>
-              <p className="text-xl font-semibold text-slate-800">Silver</p>
+              <div className="flex flex-wrap gap-2">
+                {['Pending', 'In Progress', 'Resolved'].map((state) => (
+                  <button
+                    key={state}
+                    type="button"
+                    onClick={() => handleStatusChange(report.id, state)}
+                    className={`rounded-full px-3 py-2 text-sm font-medium transition ${
+                      report.status === state
+                        ? 'bg-slate-900 text-white'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    }`}
+                  >
+                    {state}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
+        ))}
       </div>
     </div>
   );

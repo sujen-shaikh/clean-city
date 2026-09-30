@@ -1,18 +1,47 @@
 import { useState } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import { addReport } from '../lib/reportData';
 
 const issueTypes = ['Garbage', 'Drainage', 'Pothole', 'Street Light', 'Water Leakage'];
 
-export default function Report() {
-  const [form, setForm] = useState({
-    title: '',
-    description: '',
-    category: 'Garbage',
-    latitude: '',
-    longitude: '',
+const defaultLocation = [19.228, 72.856];
+
+const emptyForm = {
+  title: '',
+  description: '',
+  category: 'Garbage',
+  latitude: '',
+  longitude: '',
+};
+
+function LocationPicker({ onSelect }) {
+  useMapEvents({
+    click(event) {
+      const { lat, lng } = event.latlng;
+      onSelect([lat, lng]);
+    },
   });
+
+  return null;
+}
+
+export default function Report() {
+  const [form, setForm] = useState(emptyForm);
+  const [imagePreview, setImagePreview] = useState('');
+  const [markerPosition, setMarkerPosition] = useState(defaultLocation);
 
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const syncLocation = (lat, lng) => {
+    setMarkerPosition([lat, lng]);
+    setForm((prev) => ({
+      ...prev,
+      latitude: lat.toFixed(6),
+      longitude: lng.toFixed(6),
+    }));
   };
 
   const handleLocation = () => {
@@ -23,11 +52,7 @@ export default function Report() {
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        setForm((prev) => ({
-          ...prev,
-          latitude: position.coords.latitude.toFixed(6),
-          longitude: position.coords.longitude.toFixed(6),
-        }));
+        syncLocation(position.coords.latitude, position.coords.longitude);
       },
       () => {
         alert('Unable to access location. Please allow location access.');
@@ -35,31 +60,35 @@ export default function Report() {
     );
   };
 
-  const handleSubmit = async (e) => {
+  const handlePhotoUpload = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => setImagePreview(reader.result);
+    reader.readAsDataURL(file);
+  };
+
+  const handleSubmit = (e) => {
     e.preventDefault();
-    const payload = {
+
+    if (!form.title || !form.description || !form.latitude || !form.longitude) {
+      alert('Please complete the title, description, and current GPS location before submitting.');
+      return;
+    }
+
+    addReport({
       ...form,
+      image: imagePreview,
       status: 'Pending',
       createdAt: new Date().toISOString(),
-    };
+    });
 
-    try {
-      const response = await fetch('http://localhost:5000/api/reports', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      if (response.ok) {
-        alert('Report submitted successfully!');
-        setForm({ title: '', description: '', category: 'Garbage', latitude: '', longitude: '' });
-      } else {
-        alert('Unable to submit report.');
-      }
-    } catch (error) {
-      console.error(error);
-      alert('Network error.');
-    }
+    alert('Report submitted successfully.');
+    setForm(emptyForm);
+    setImagePreview('');
   };
 
   return (
@@ -114,11 +143,17 @@ export default function Report() {
 
           <div className="space-y-4">
             <div className="rounded-2xl border border-dashed border-slate-300 p-6 text-center text-slate-500">
-              <p className="font-medium text-slate-700">Camera Capture</p>
-              <p className="mt-2 text-sm">Photo upload is ready for integration with Cloudinary or Firebase storage.</p>
-              <button type="button" className="mt-4 rounded-full bg-emerald-600 px-5 py-2.5 text-white">
-                Open Camera
-              </button>
+              <p className="font-medium text-slate-700">Attach a photo</p>
+              <p className="mt-2 text-sm">Upload a photo so teams can verify the issue before dispatching support.</p>
+
+              <label className="mt-4 inline-flex cursor-pointer rounded-full bg-emerald-600 px-5 py-2.5 text-white">
+                Choose image
+                <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+              </label>
+
+              {imagePreview ? (
+                <img src={imagePreview} alt="Preview" className="mt-4 h-40 w-full rounded-2xl object-cover" />
+              ) : null}
             </div>
 
             <div>
@@ -139,8 +174,22 @@ export default function Report() {
                   placeholder="Longitude"
                 />
               </div>
+
+              <div className="mt-4 h-56 overflow-hidden rounded-2xl border border-slate-200">
+                <MapContainer center={markerPosition} zoom={14} scrollWheelZoom className="h-full w-full">
+                  <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  />
+                  <LocationPicker onSelect={(coords) => syncLocation(coords[0], coords[1])} />
+                  <Marker position={markerPosition}>
+                    <Popup>Selected issue location</Popup>
+                  </Marker>
+                </MapContainer>
+              </div>
+
               <button type="button" onClick={handleLocation} className="mt-3 rounded-full bg-slate-900 px-5 py-2.5 text-white">
-                Use Current GPS
+                Use My Current Location
               </button>
             </div>
 

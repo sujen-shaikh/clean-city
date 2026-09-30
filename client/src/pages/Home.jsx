@@ -1,37 +1,53 @@
-const stats = [
-  { label: 'Reports Resolved', value: '2,345' },
-  { label: 'Workers Active', value: '126' },
-  { label: 'Pending Issues', value: '53' },
-];
+import { Link } from 'react-router-dom';
+import { readReports } from '../lib/reportData';
 
 const steps = [
   'Capture a photo instantly',
   'Auto-detect the location',
-  'Submit to the civic dashboard',
+  'Track every response in real time',
+];
+
+const highlights = [
+  { title: 'Quick response', text: 'Convert reports into verified action items within minutes.' },
+  { title: 'Better visibility', text: 'See issues by category, urgency, and current status.' },
+  { title: 'Accountable service', text: 'Keep citizens and field teams aligned on every update.' },
 ];
 
 export default function Home() {
+  const reports = readReports();
+  const pending = reports.filter((item) => item.status === 'Pending').length;
+  const inProgress = reports.filter((item) => item.status === 'In Progress').length;
+  const resolved = reports.filter((item) => item.status === 'Resolved').length;
+
+  const stats = [
+    { label: 'Reports submitted', value: reports.length.toString() },
+    { label: 'Pending', value: pending.toString() },
+    { label: 'Resolved', value: resolved.toString() },
+    { label: 'In progress', value: inProgress.toString() },
+  ];
+
   return (
     <div className="mx-auto flex max-w-7xl flex-col gap-10 px-4 py-10 sm:px-6 lg:px-8">
-      <section className="grid items-center gap-8 rounded-3xl bg-gradient-to-br from-emerald-600 to-cyan-600 p-8 text-white shadow-xl lg:grid-cols-[1.2fr_0.8fr] lg:p-12">
+      <section className="grid items-center gap-8 rounded-3xl bg-gradient-to-br from-emerald-600 via-emerald-600 to-cyan-600 p-8 text-white shadow-xl lg:grid-cols-[1.2fr_0.8fr] lg:p-12">
         <div>
           <p className="mb-3 text-sm font-semibold uppercase tracking-[0.3em] text-emerald-100">Smart civic reporting</p>
-          <h1 className="text-4xl font-bold sm:text-5xl">See it. Snap it. Report it.</h1>
+          <h1 className="text-4xl font-bold sm:text-5xl">See it. Snap it. Resolve it.</h1>
           <p className="mt-4 max-w-2xl text-lg text-emerald-50">
-            Let citizens report garbage, potholes, and civic issues in seconds with geotagged photos and live status tracking.
+            Empower residents to report litter, broken infrastructure, and safety issues with geotagged photos and transparent status tracking.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
-            <a href="/report" className="rounded-full bg-white px-6 py-3 font-semibold text-emerald-700 transition hover:bg-emerald-50">
+            <Link to="/report" className="rounded-full bg-white px-6 py-3 font-semibold text-emerald-700 transition hover:bg-emerald-50">
               Report Now
-            </a>
-            <a href="/map" className="rounded-full border border-white/50 px-6 py-3 font-semibold text-white transition hover:bg-white/10">
+            </Link>
+            <Link to="/map" className="rounded-full border border-white/50 px-6 py-3 font-semibold text-white transition hover:bg-white/10">
               View Live Map
-            </a>
+            </Link>
           </div>
         </div>
+
         <div className="rounded-2xl border border-white/20 bg-white/10 p-6 backdrop-blur">
-          <h2 className="text-xl font-semibold">Live Statistics</h2>
-          <div className="mt-5 space-y-4">
+          <h2 className="text-xl font-semibold">Live city snapshot</h2>
+          <div className="mt-5 grid gap-4 sm:grid-cols-2">
             {stats.map((item) => (
               <div key={item.label} className="rounded-xl bg-white/15 p-4">
                 <p className="text-3xl font-semibold">{item.value}</p>
@@ -56,35 +72,28 @@ export default function Home() {
             ))}
           </div>
         </div>
+
         <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
           <h2 className="text-2xl font-semibold">Why CleanCity matters</h2>
           <p className="mt-4 text-slate-600">
-            The platform helps citizens report civic issues quickly so municipalities can respond faster and prioritize the most urgent locations.
+            Community-driven reporting helps city teams act faster on clogged drains, damaged roads, unsafe lighting, and overflowing waste.
           </p>
+          <div className="mt-4 rounded-2xl bg-emerald-50 p-4 text-sm text-emerald-800">
+            92% of residents say faster issue visibility leads to cleaner neighborhoods.
+          </div>
         </div>
       </section>
 
-      <section className="rounded-3xl border border-emerald-100 bg-emerald-50 p-8 shadow-sm">
-        <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.25em] text-emerald-700">Featured article</p>
-            <h2 className="mt-2 text-3xl font-semibold text-slate-900">A cleaner city starts with simple action</h2>
-            <p className="mt-4 text-slate-600">
-              When residents report overflowing bins, blocked drains, or broken lights in real time, local teams can act faster and neighborhoods stay healthier. CleanCity turns everyday observations into meaningful civic action.
-            </p>
-          </div>
-          <div className="rounded-2xl bg-white p-6 shadow-sm">
-            <h3 className="text-xl font-semibold text-slate-900">What this article highlights</h3>
-            <ul className="mt-4 space-y-3 text-sm text-slate-600">
-              <li>• Faster reporting for public issues</li>
-              <li>• Clear visibility of unresolved problems</li>
-              <li>• Better coordination between citizens and authorities</li>
-            </ul>
-            <a href="/report" className="mt-6 inline-flex rounded-full bg-emerald-600 px-5 py-2.5 font-semibold text-white transition hover:bg-emerald-700">
-              Report an issue
-            </a>
-          </div>
-        </div>
+      <section className="grid gap-6 md:grid-cols-3">
+        {highlights.map((highlight) => (
+          <article key={highlight.title} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="mb-4 inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">
+              Impact
+            </div>
+            <h3 className="text-xl font-semibold text-slate-900">{highlight.title}</h3>
+            <p className="mt-3 text-slate-600">{highlight.text}</p>
+          </article>
+        ))}
       </section>
     </div>
   );

@@ -1,47 +1,80 @@
+import { useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-
-const reports = [
-  { id: 1, title: 'Garbage pile near park', status: 'Pending', position: [19.228, 72.856] },
-  { id: 2, title: 'Drainage blockage', status: 'In Progress', position: [19.231, 72.858] },
-  { id: 3, title: 'Broken street light', status: 'Cleaned', position: [19.226, 72.853] },
-];
+import { readReports } from '../lib/reportData';
 
 const iconColors = {
-  Pending: 'red',
-  'In Progress': 'orange',
-  Cleaned: 'green',
+  Pending: '#f59e0b',
+  'In Progress': '#3b82f6',
+  Resolved: '#10b981',
 };
 
 const createIcon = (color) =>
   L.divIcon({
     className: 'custom-marker',
-    html: `<div style="background:${color};width:16px;height:16px;border-radius:9999px;border:2px solid white"></div>`,
+    html: `<div style="background:${color};width:16px;height:16px;border-radius:9999px;border:3px solid white;box-shadow:0 2px 10px rgba(15,23,42,0.2)"></div>`,
   });
 
 export default function MapPage() {
+  const reports = readReports();
+
+  const mapCenter = useMemo(() => {
+    const firstReport = reports[0];
+    if (firstReport && firstReport.latitude && firstReport.longitude) {
+      return [Number(firstReport.latitude), Number(firstReport.longitude)];
+    }
+    return [19.228, 72.856];
+  }, [reports]);
+
+  const totals = {
+    Pending: reports.filter((report) => report.status === 'Pending').length,
+    'In Progress': reports.filter((report) => report.status === 'In Progress').length,
+    Resolved: reports.filter((report) => report.status === 'Resolved').length,
+  };
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
         <h1 className="text-3xl font-semibold">Live map of civic reports</h1>
         <p className="mt-2 text-slate-600">Reports appear as markers with color-coded status.</p>
 
+        <div className="mt-6 grid gap-4 md:grid-cols-3">
+          {Object.entries(totals).map(([status, count]) => (
+            <div key={status} className="rounded-2xl bg-slate-50 p-4">
+              <p className="text-sm text-slate-500">{status}</p>
+              <p className="mt-2 text-3xl font-semibold" style={{ color: iconColors[status] }}>
+                {count}
+              </p>
+            </div>
+          ))}
+        </div>
+
         <div className="mt-6 h-[480px] overflow-hidden rounded-2xl">
-          <MapContainer center={[19.228, 72.856]} zoom={13} scrollWheelZoom className="h-full w-full">
+          <MapContainer center={mapCenter} zoom={13} scrollWheelZoom className="h-full w-full">
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            {reports.map((report) => (
-              <Marker key={report.id} position={report.position} icon={createIcon(iconColors[report.status])}>
-                <Popup>
-                  <strong>{report.title}</strong>
-                  <br />
-                  Status: {report.status}
-                </Popup>
-              </Marker>
-            ))}
+            {reports.map((report) => {
+              if (!report.latitude || !report.longitude) return null;
+
+              return (
+                <Marker
+                  key={report.id}
+                  position={[Number(report.latitude), Number(report.longitude)]}
+                  icon={createIcon(iconColors[report.status])}
+                >
+                  <Popup>
+                    <strong>{report.title}</strong>
+                    <br />
+                    {report.category}
+                    <br />
+                    Status: {report.status}
+                  </Popup>
+                </Marker>
+              );
+            })}
           </MapContainer>
         </div>
       </div>
